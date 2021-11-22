@@ -489,3 +489,353 @@ alter table TELEFONO_CLIENTE
 alter table TELEFONO_EMPLEADO
    add constraint FK_TELEFONO_REFERENCE_EMPLEADO foreign key (COD_EMPLEADO)
       references EMPLEADO (COD_EMPLEADO);
+/*==============================================================*/
+/* TRIGGERS PROCEDIMIENTO Y FUNCION                                            */
+/*==============================================================*/
+CREATE OR REPLACE TRIGGER TRG_BUR_CLIENTE
+BEFORE UPDATE ON CLIENTE
+REFERENCING OLD AS OLD NEW AS NEW
+FOR EACH ROW
+DECLARE
+NCUI NUMBER(10);
+BEGIN
+  BEGIN
+      SELECT CUI INTO NCUI
+      FROM CLIENTE
+       WHERE CUI = :NEW.CUI;
+     EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20001,'No existe el CUI buscado');
+     WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20002,'El cui existe mas de una vez');
+     WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20003,'Error al actualizr el CUI '||SQLERRM);
+  END;
+END;
+
+CREATE OR REPLACE TRIGGER TRG_BUR_CLIENTE1
+BEFORE UPDATE ON CLIENTE
+REFERENCING OLD AS OLD NEW AS NEW
+FOR EACH ROW
+DECLARE
+NNIT NUMBER(10);
+BEGIN
+  BEGIN
+      SELECT CUI INTO NNIT
+      FROM CLIENTE
+       WHERE NIT = :NEW.NIT;
+     EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20001,'No existe el NIT buscado');
+     WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20002,'El nit existe mas de una vez');
+     WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20003,'Error al actualizr el NIT '||SQLERRM);
+  END;
+END;
+
+CREATE OR REPLACE TRIGGER TRG_BUR_EMPLEADO
+BEFORE UPDATE ON EMPLEADO
+REFERENCING OLD AS OLD NEW AS NEW
+FOR EACH ROW
+DECLARE
+NCUI1 NUMBER(10);
+BEGIN
+  BEGIN
+      SELECT CUI INTO NCUI1
+      FROM EMPLEADO
+       WHERE CUI = :NEW.CUI;
+     EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20001,'No existe el CUI buscado');
+     WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20002,'El cui existe mas de una vez');
+     WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20003,'Error al actualizr el CUI '||SQLERRM);
+  END;
+END;
+
+create or replace trigger producto_actualiza_stock
+after insert on FACTURA FOR EACH ROW
+declare
+stock producto.cantidad%type;
+begin
+    select cantidad into stock from producto where producto = :new.producto;
+    if stock - :new.cantidad > 0 then
+   update producto set cantidad = cantidad - :new.cantidad
+   where producto = :new.producto;
+  else
+  raise_application_error(-20001, 'No hay cantidad solisitada de producto');
+  end if;
+end;
+
+create or replace trigger cuenta_actualiza_ingreso
+after insert on FACTURA FOR EACH ROW
+declare
+stock cuenta.ingreso%type;
+begin
+ select ingreso into stock from cuenta where nombre = 'CUENTA EMPRESA';
+    if stock >= 0 then
+   update cuenta set ingreso = ingreso + :new.costo where nombre = 'CUENTA EMPRESA';
+   end if;
+end;
+
+create or replace trigger producto_costo
+before insert on FACTURA FOR EACH ROW
+declare
+stock producto.precio%type;
+begin
+    select precio into stock from producto where producto = :new.producto;
+    if stock > 0 then
+    :new.costo := :new.cantidad * stock;
+  else
+  raise_application_error(-20001, 'Error al calcular');
+  end if;
+end;
+
+create or replace trigger producto_actualiza_estado
+before update of cantidad on PRODUCTO FOR EACH ROW
+declare
+begin
+
+   if :new.cantidad >= 0 then
+   :new.estado := 'DISPONIBLE';
+   else
+   :new.estado := 'NO DISPONIBLE';
+   end if;
+  
+end;
+
+create or replace trigger producto_actualiza_total
+after insert on COMPRA FOR EACH ROW
+declare
+stock cuenta.total%type;
+begin
+    select total into stock from cuenta where idcuenta = 1;
+    if stock - :new.cantidad > 0 then
+   update cuenta set total = total - :new.total
+   where idcuenta = 1;
+  else
+  raise_application_error(-20001, 'No hay suficiente dinero en la cuenta para hacer la compra');
+  end if;
+end;
+
+create or replace trigger producto_actualiza_cantidad
+after insert on COMPRA FOR EACH ROW
+declare
+stock producto.cantidad%type;
+begin
+    select cantidad into stock from producto where producto = :new.producto;
+    if stock - :new.cantidad > 0 then
+   update producto set cantidad = cantidad + :new.cantidad
+   where producto = :new.producto;
+  else
+  raise_application_error(-20001, 'Error');
+  end if;
+end;
+
+create or replace trigger puesto_vitacora
+after insert on PUESTO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'PUESTO', USER, SYSDATE, 'NUEVO PUESTO','INSERT');   
+end;
+
+create or replace trigger puesto_vitacora1
+after delete on PUESTO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'PUESTO', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger telefono_emp_vitacora
+after insert on TELEFONO_EMPLEADO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'TELEFONO_EMPLEADO', USER, SYSDATE, 'NUEVO TELEFONO','INSERT');   
+end;
+
+create or replace trigger telefono_emp_vitacora1
+after delete on TELEFONO_EMPLEADO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'TELEFONO_EMPLEADO', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger direccion_emp_vitacora
+after insert on DIRECCION_EMPLEADO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'DIRECCION_EMPLEADO', USER, SYSDATE, 'NUEVA DIRECCION','INSERT');   
+end;
+
+create or replace trigger direccion_emp_vitacora1
+after delete on DIRECCION_EMPLEADO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'DIRECCION_EMPLEADO', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger telefono_cli_vitacora
+after insert on TELEFONO_CLIENTE FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'TELEFONO_CLIENTE', USER, SYSDATE, 'NUEVO TELEFONO','INSERT');   
+end;
+
+create or replace trigger telefono_cli_vitacora1
+after delete on TELEFONO_CLIENTE FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'TELEFONO_CLIENTE', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger direccion_cli_vitacora
+after insert on DIRECCION_CLIENTE FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'DIRECCION_CLIENTE', USER, SYSDATE, 'NUEVA DIRECCION','INSERT');   
+end;
+
+create or replace trigger direccion_cli_vitacora1
+after delete on DIRECCION_CLIENTE FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'DIRECCION_CLIENTE', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger factura_vitacora
+after insert on FACTURA FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'FACTURA', USER, SYSDATE, 'NUEVO PUESTO','INSERT');   
+end;
+
+create or replace trigger factura_vitacora1
+after delete on FACTURA FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'FACTURA', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger cliente_vitacora
+after insert on CLIENTE FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'CLIENTE', USER, SYSDATE, 'NUEVO CLIENTE','INSERT');   
+end;
+
+create or replace trigger cliente_vitacora1
+after delete on CLIENTE FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'CLIENTE', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger producto_vitacora
+after insert on PRODUCTO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'PRODUCTO', USER, SYSDATE, 'NUEVO PRODUCTO','INSERT');   
+end;
+
+create or replace trigger producto_vitacora1
+after delete on PRODUCTO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'PRODUCTO', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger empleado_vitacora
+after insert on EMPLEADO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'EMPLEADO', USER, SYSDATE, 'NUEVO EMPLEADO','INSERT');   
+end;
+
+create or replace trigger empleado_vitacora1
+after delete on EMPLEADO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'EMPLEADO', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger sucursal_vitacora
+after insert on SUCURSAL FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'SUCURSAL', USER, SYSDATE, 'NUEVA SUCURSAL','INSERT');   
+end;
+
+create or replace trigger sucursal_vitacora1
+after delete on SUCURSAL FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'SUCURSAL', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger compra_vitacora
+after insert on COMPRA FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'COMPRA', USER, SYSDATE, 'NUEVA COMPRA','INSERT');   
+end;
+
+create or replace trigger compra_vitacora1
+after delete on COMPRA FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'COMPRA', USER, SYSDATE, 'BORRAR','DELETE');   
+end;
+
+create or replace trigger cuenta_vitacora
+before update of TOTAL on CUENTA FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ANTIGUO, NUEVO, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'Cuenta', USER, SYSDATE, :old.total, :new.total, 'TOTAL','UPDATE');   
+end;
+
+create or replace trigger cuenta_vitacora_ing
+before update of INGRESO on CUENTA FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ANTIGUO, NUEVO, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'Cuenta', USER, SYSDATE, :old.ingreso, :new.ingreso, 'INGRESO','UPDATE');   
+end;
+
+create or replace trigger producto_vitacora_es
+before update of ESTADO on PRODUCTO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ANTIGUO, NUEVO, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'PRODUCTO', USER, SYSDATE, :old.estado, :new.estado, 'ESTADO','UPDATE');   
+end;
+
+create or replace trigger producto_vitacora_cant
+before update of CANTIDAD on PRODUCTO FOR EACH ROW
+declare
+begin
+    insert into vitacora(IDBITACURA, TABLA, USUARIO, FECHA, ANTIGUO, NUEVO, ATRIBUTO, TIPO)VALUES(SQC_BITACORA.NEXTVAL, 'PRODUCTO', USER, SYSDATE, :old.cantidad, :new.cantidad, 'CANTIDAD','UPDATE');   
+end;
+
+create or replace PROCEDURE PROC_BITACORA(NTABLA VARCHAR2, 
+                            SCAMPO VARCHAR2, SVALORANT VARCHAR2, SVALORNUE VARCHAR2, STIP VARCHAR2) is
+                            PRAGMA AUTONOMOUS_TRANSACTION;
+begin
+  insert into vitacora (IDBITACURA, TABLA, USUARIO, FECHA, ANTIGUO, NUEVO, ATRIBUTO, TIPO)
+  values (SQC_BITACORA.NEXTVAL, NTABLA, USER, SYSDATE, SVALORANT, SVALORNUE, SCAMPO, STIP);
+    COMMIT;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20001,'Error Insertando Bitacora'||sqlerrm);
+end;
+
+CREATE PUBLIC SYNONYM PROC_BITACORA FOR PROC_BITACORA;
+
+CREATE OR REPLACE FUNCTION TOTAL (VAL1 IN NUMBER, VAL2 IN NUMBER) RETURN NUMBER IS
+NPRODUCTO NUMBER:=0;
+BEGIN
+	NPRODUCTO := PAR1 * VAL2;
+	RETURN NPRODUCTO;
+EXCEPTION
+	WHEN OTHERS THEN
+		RETURN 0;
+END;
