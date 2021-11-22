@@ -419,3 +419,73 @@ Minvalue 1
 Nomaxvalue
 Increment By 1
 Cache 20;
+/*==============================================================*/
+/* LLAVES FORANEAS                                             */
+/*==============================================================*/
+alter table CLIENTE
+   add constraint FK_CLIENTE_REFERENCE_VEHICULO foreign key (IDVEHICULO)
+      references VEHICULO (IDVEHICULO);
+
+alter table DIRECCION_CLIENTE
+   add constraint FK_DIRECCIO_REFERENCE_CLIENTE foreign key (COD_CLIENTE)
+      references CLIENTE (COD_CLIENTE);
+
+alter table DIRECCION_EMPLEADO
+   add constraint FK_DIRECCIO_REFERENCE_EMPLEADO foreign key (COD_EMPLEADO)
+      references EMPLEADO (COD_EMPLEADO);
+
+alter table EMPLEADO
+   add constraint FK_EMPLEADO_REFERENCE_PUESTO foreign key (IDPUESTO)
+      references PUESTO (IDPUESTO);
+
+alter table EMPLEADO
+   add constraint FK_EMPLEADO_REFERENCE_TURNO foreign key (IDTURNO)
+      references TURNO (IDTURNO);
+
+alter table EMPLEADO
+   add constraint FK_EMPLEADO_REFERENCE_SUCURSAL foreign key (COD_SUCURSAL)
+      references SUCURSAL (COD_SUCURSAL);
+
+alter table FACTURA
+   add constraint FK_FACTURA_REFERENCE_EMPLEADO foreign key (COD_EMPLEADO)
+      references EMPLEADO (COD_EMPLEADO);
+    
+alter table FACTURA
+   add constraint FK_FACTURA_REFERENCE_CLIENTE foreign key (COD_CLIENTE)
+      references CLIENTE (COD_CLIENTE);
+
+alter table INVENTARIO
+   add constraint FK_INVENTAR_REFERENCE_PRODUCTO foreign key (COD_PRODUCTO)
+      references PRODUCTO (COD_PRODUCTO);
+
+alter table MUNICIPIO
+   add constraint FK_MUNICIPI_REFERENCE_DEPARTAM foreign key (COD_DEPARTAMENTO)
+      references DEPARTAMENTO (COD_DEPARTAMENTO);
+
+alter table PRODUCTO
+   add constraint FK_PRODUCTO_REFERENCE_CATEGORI foreign key (IDCATEGORIA)
+      references CATEGORIA_PRODUCTO (IDCATEGORIA);
+
+alter table PRODUCTO
+   add constraint FK_PRODUCTO_REFERENCE_TIPO foreign key (IDTIPO)
+      references TIPO_PRODUCTO (IDTIPO);
+
+alter table PRODUCTO
+   add constraint FK_PRODUCTO_REFERENCE_UNIDAD_M foreign key (IDUNUDAD)
+      references UNIDAD_MEDIDA (IDUNUDAD);
+
+alter table PRODUCTO
+   add constraint FK_PRODUCTO_REFERENCE_SUCURSAL foreign key (COD_SUCURSAL)
+      references SUCURSAL (COD_SUCURSAL);
+
+alter table SUCURSAL
+   add constraint FK_SUCURSAL_REFERENCE_MUNICIPI foreign key (COD_MUNICIPIO)
+      references MUNICIPIO (COD_MUNICIPIO);
+
+alter table TELEFONO_CLIENTE
+   add constraint FK_TELEFONO_REFERENCE_CLIENTE foreign key (COD_CLIENTE)
+      references CLIENTE (COD_CLIENTE);
+
+alter table TELEFONO_EMPLEADO
+   add constraint FK_TELEFONO_REFERENCE_EMPLEADO foreign key (COD_EMPLEADO)
+      references EMPLEADO (COD_EMPLEADO);
